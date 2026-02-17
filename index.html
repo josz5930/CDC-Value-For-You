@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self';">
+    <title>CDC Voucher Valuation Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CDC Voucher Valuation Calculator</h1>
+            <p class="subtitle">Calculate the true economic value of your CDC vouchers based on your spending habits</p>
+        </header>
+
+        <main>
+            <section class="input-section card">
+                <h2>Voucher Information</h2>
+                <div class="form-group">
+                    <label for="voucher-amount">Total Voucher Amount Received ($)</label>
+                    <input type="number" id="voucher-amount" min="0.01" max="2000" step="0.01" value="300">
+                    <span class="error-message" id="voucher-amount-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="voucher-denomination">Voucher Denomination ($)</label>
+                    <input type="number" id="voucher-denomination" min="0.01" step="0.01" value="10">
+                    <span class="error-message" id="voucher-denomination-error"></span>
+                </div>
+
+                <h2>Supermarket Spending</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="supermarket-spend">Avg. Spend at Supermarkets ($)</label>
+                        <input type="number" id="supermarket-spend" min="0" step="0.01" value="80">
+                        <span class="error-message" id="supermarket-spend-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="supermarket-visits">Visits (during validity)</label>
+                        <input type="number" id="supermarket-visits" min="0" step="1" value="4">
+                        <span class="error-message" id="supermarket-visits-error"></span>
+                    </div>
+                </div>
+
+                <h2>Heartland Shop Spending</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="heartland-spend">Avg. Spend at Heartland Shops ($)</label>
+                        <input type="number" id="heartland-spend" min="0" step="0.01" value="30">
+                        <span class="error-message" id="heartland-spend-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="heartland-visits">Visits (during validity)</label>
+                        <input type="number" id="heartland-visits" min="0" step="1" value="6">
+                        <span class="error-message" id="heartland-visits-error"></span>
+                    </div>
+                </div>
+
+                <h2>Subjective Value</h2>
+                <div class="form-group">
+                    <label for="wtp-percentage">Willingness to Pay (%)</label>
+                    <input type="number" id="wtp-percentage" min="0" max="100" step="1" value="70">
+                    <span class="error-message" id="wtp-percentage-error"></span>
+                    <p class="help-text">What percentage of face value are the vouchers worth to you personally?</p>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="calculate-btn" class="btn-primary">Calculate Value</button>
+                    <button type="button" id="reset-btn" class="btn-secondary">Clear Form</button>
+                    <button type="button" id="share-btn" class="btn-secondary">Share Results</button>
+                </div>
+            </section>
+
+            <section class="results-section card" id="results-section" style="display: none;">
+                <h2>Your Voucher Value</h2>
+                
+                <div class="value-range">
+                    <p class="range-label">Estimated Value Range:</p>
+                    <p class="range-value">
+                        <span id="min-value">$0.00</span> to <span id="max-value">$0.00</span>
+                    </p>
+                </div>
+
+                <div class="efficiency-score">
+                    <p class="score-label">Efficiency Score:</p>
+                    <p class="score-value" id="efficiency-score">0%</p>
+                </div>
+
+                <div class="summary">
+                    <p id="summary-text">Your vouchers are worth between $0.00 and $0.00 based on your usage profile.</p>
+                </div>
+
+                <h3>Calculation Breakdown</h3>
+                <div class="breakdown-table-wrapper">
+                    <table class="breakdown-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Method 1: WTP</td>
+                                <td>Subjective willingness to pay</td>
+                                <td id="wtp-value">$0.00</td>
+                            </tr>
+                            <tr>
+                                <td>Method 2: Denomination Loss</td>
+                                <td>Value after accounting for no-change policy</td>
+                                <td id="denom-value">$0.00</td>
+                            </tr>
+                            <tr>
+                                <td>Method 3: Incremental Spending</td>
+                                <td>Maximum utility from actual spending</td>
+                                <td id="incremental-value">$0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="details-section">
+                    <h4>Denomination Loss Details</h4>
+                    <div class="detail-row">
+                        <span>Supermarket Loss:</span>
+                        <span id="supermarket-loss">$0.00</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Heartland Loss:</span>
+                        <span id="heartland-loss">$0.00</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Total Loss:</span>
+                        <span id="total-loss">$0.00</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Usable Amount:</span>
+                        <span id="usable-amount">$0.00</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section card">
+                <h3>About This Calculator</h3>
+                <p>This calculator helps you understand the true economic value of your CDC vouchers by considering:</p>
+                <ul>
+                    <li><strong>Willingness to Pay:</strong> Your subjective valuation of the vouchers</li>
+                    <li><strong>Denomination Loss:</strong> Value lost due to "no change" policy when spending doesn't match voucher denominations</li>
+                    <li><strong>Incremental Spending:</strong> The actual cash value you're replacing with vouchers</li>
+                </ul>
+                <p class="privacy-note">🔒 <strong>Privacy Note:</strong> All calculations happen in your browser. No data is sent to any server.</p>
+            </section>
+        </main>
+
+        <footer>
+            <p>CDC Voucher Valuation Calculator - Client-Side Secure</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
