@@ -1,0 +1,49 @@
+# --- Dependencies & Package Managers ---
+node_modules/
+jspm_packages/
+.pnpm-store/
+
+# --- Build & Distribution (PWA Assets) ---
+dist/
+build/
+out/
+.next/
+.docusaurus/
+# Ignore generated service workers if they are auto-generated
+sw.js
+workbox-*.js
+
+# --- Environment & Secrets (CRITICAL) ---
+.env
+*.env.*
+!.env.example
+*.pem
+*.key
+.secret
+.capirc
+
+# --- TypeScript & Debugging ---
+*.tsbuildinfo
+*.js.map
+*.d.ts.map
+# Optional: Ignore all .d.ts if you only want it to read your source .ts
+# *.d.ts
+
+# --- Tests & Coverage ---
+coverage/
+.nyc_output/
+*.lcov
+
+# --- IDE & System Files ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
