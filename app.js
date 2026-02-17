@@ -32,6 +32,7 @@ let elements = {};
 
 // State
 let calculationDebounceTimer = null;
+let currentResults = null;
 
 /**
  * Initialize the application
@@ -477,6 +478,9 @@ function calculateIncrementalSpending(
  * Display calculation results
  */
 function displayResults(results) {
+    // Store results for PDF export
+    currentResults = results;
+    
     // Show results section
     elements.resultsSection.style.display = 'block';
     
@@ -568,7 +572,181 @@ function resetForm() {
 }
 
 /**
- * Share results via URL
+ * Generate and save PDF of results
+ */
+function generatePDF() {
+    if (!currentResults) {
+        showToast('No results to export. Please calculate first.');
+        return;
+    }
+    
+    try {
+        // Create new PDF document
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Title
+        doc.setFontSize(20);
+        doc.setTextColor(37, 99, 235); // Primary color
+        doc.text('CDC Voucher Valuation Report', 105, 20, { align: 'center' });
+        
+        // Subtitle
+        doc.setFontSize(12);
+        doc.setTextColor(107, 114, 128); // Secondary color
+        doc.text('Generated on ' + new Date().toLocaleDateString(), 105, 30, { align: 'center' });
+        
+        // Line separator
+        doc.setDrawColor(229, 231, 235);
+        doc.line(20, 35, 190, 35);
+        
+        // Voucher Information Section
+        doc.setFontSize(16);
+        doc.setTextColor(17, 24, 39); // Text primary
+        doc.text('Voucher Information', 20, 45);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        
+        const formatCurrency = (value) => {
+            if (!isFinite(value) || isNaN(value)) return '$0.00';
+            return '$' + value.toFixed(2);
+        };
+        
+        // Input values
+        const inputs = [
+            ['Total Voucher Amount:', formatCurrency(currentResults.voucherAmount)],
+            ['Voucher Denomination:', formatCurrency(getInputValue(elements.voucherDenomination))],
+            ['Supermarket Avg. Spend:', formatCurrency(getInputValue(elements.supermarketSpend))],
+            ['Supermarket Visits:', getInputValue(elements.supermarketVisits)],
+            ['Heartland Avg. Spend:', formatCurrency(getInputValue(elements.heartlandSpend))],
+            ['Heartland Visits:', getInputValue(elements.heartlandVisits)],
+            ['Willingness to Pay:', getInputValue(elements.wtpPercentage) + '%']
+        ];
+        
+        let yPos = 55;
+        inputs.forEach(([label, value]) => {
+            doc.text(label, 20, yPos);
+            doc.text(value.toString(), 80, yPos);
+            yPos += 7;
+        });
+        
+        // Results Section
+        yPos += 5;
+        doc.setFontSize(16);
+        doc.setTextColor(17, 24, 39);
+        doc.text('Valuation Results', 20, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        
+        // Value Range
+        doc.setFillColor(224, 231, 255); // Light blue background
+        doc.rect(20, yPos, 170, 15, 'F');
+        doc.text('Estimated Value Range:', 25, yPos + 5);
+        doc.setFontSize(14);
+        doc.setTextColor(37, 99, 235);
+        doc.text(`${formatCurrency(currentResults.minValue)} to ${formatCurrency(currentResults.maxValue)}`, 25, yPos + 12);
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        yPos += 25;
+        
+        // Efficiency Score
+        doc.text('Efficiency Score:', 20, yPos);
+        doc.setFontSize(14);
+        doc.setTextColor(16, 185, 129); // Success color
+        doc.text(currentResults.efficiencyScore.toFixed(1) + '%', 80, yPos);
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
+        
+        // Summary
+        doc.text('Summary:', 20, yPos);
+        yPos += 7;
+        doc.setFontSize(11);
+        const summary = `Your ${formatCurrency(currentResults.voucherAmount)} vouchers are worth between ${formatCurrency(currentResults.minValue)} and ${formatCurrency(currentResults.maxValue)} based on your usage profile.`;
+        const splitSummary = doc.splitTextToSize(summary, 170);
+        doc.text(splitSummary, 20, yPos);
+        yPos += splitSummary.length * 5 + 10;
+        
+        // Breakdown Table
+        doc.setFontSize(16);
+        doc.setTextColor(17, 24, 39);
+        doc.text('Calculation Breakdown', 20, yPos);
+        yPos += 10;
+        
+        // Table headers
+        doc.setFillColor(249, 250, 251);
+        doc.rect(20, yPos, 170, 10, 'F');
+        doc.setFontSize(11);
+        doc.setTextColor(107, 114, 128);
+        doc.text('Method', 22, yPos + 7);
+        doc.text('Description', 70, yPos + 7);
+        doc.text('Value', 150, yPos + 7);
+        yPos += 10;
+        
+        // Table rows
+        const rows = [
+            ['Method 1: WTP', 'Subjective willingness to pay', formatCurrency(currentResults.wtpValue)],
+            ['Method 2: Denomination Loss', 'Value after accounting for no-change policy', formatCurrency(currentResults.denomValue)],
+            ['Method 3: Incremental Spending', 'Maximum utility from actual spending', formatCurrency(currentResults.incrementalValue)]
+        ];
+        
+        rows.forEach(([method, desc, value]) => {
+            doc.setDrawColor(229, 231, 235);
+            doc.line(20, yPos, 190, yPos);
+            doc.setTextColor(0, 0, 0);
+            doc.text(method, 22, yPos + 7);
+            doc.text(desc, 70, yPos + 7);
+            doc.setTextColor(37, 99, 235);
+            doc.text(value, 150, yPos + 7);
+            yPos += 10;
+        });
+        
+        // Details Section
+        yPos += 10;
+        doc.setFontSize(16);
+        doc.setTextColor(17, 24, 39);
+        doc.text('Denomination Loss Details', 20, yPos);
+        yPos += 10;
+        
+        const details = [
+            ['Supermarket Loss:', formatCurrency(currentResults.supermarketLoss)],
+            ['Heartland Loss:', formatCurrency(currentResults.heartlandLoss)],
+            ['Total Loss:', formatCurrency(currentResults.totalLoss)],
+            ['Usable Amount:', formatCurrency(currentResults.usableAmount)]
+        ];
+        
+        doc.setFontSize(11);
+        details.forEach(([label, value]) => {
+            doc.setTextColor(0, 0, 0);
+            doc.text(label, 20, yPos);
+            doc.setTextColor(37, 99, 235);
+            doc.text(value, 80, yPos);
+            yPos += 7;
+        });
+        
+        // Footer
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.setTextColor(107, 114, 128);
+        doc.text('Generated by CDC Voucher Valuation Calculator', 105, yPos, { align: 'center' });
+        doc.text('All calculations performed client-side. No data is sent to servers.', 105, yPos + 5, { align: 'center' });
+        
+        // Save the PDF
+        const fileName = `CDC_Voucher_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+        doc.save(fileName);
+        
+        showToast('PDF report downloaded successfully!');
+        
+    } catch (error) {
+        console.error('PDF generation failed:', error);
+        showToast('Failed to generate PDF. Please try again.');
+    }
+}
+
+/**
+ * Share results via URL or PDF (legacy)
  */
 function shareResults() {
     if (!areAllInputsValid()) {
@@ -576,24 +754,8 @@ function shareResults() {
         return;
     }
     
-    const params = new URLSearchParams();
-    params.set('amount', elements.voucherAmount.value);
-    params.set('denomination', elements.voucherDenomination.value);
-    params.set('super_spend', elements.supermarketSpend.value);
-    params.set('super_visits', elements.supermarketVisits.value);
-    params.set('heart_spend', elements.heartlandSpend.value);
-    params.set('heart_visits', elements.heartlandVisits.value);
-    params.set('wtp', elements.wtpPercentage.value);
-    
-    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-    
-    // Copy to clipboard
-    navigator.clipboard.writeText(url).then(() => {
-        showToast('Link copied to clipboard!');
-    }).catch(() => {
-        // Fallback: show the URL
-        prompt('Copy this URL to share:', url);
-    });
+    // Generate PDF instead of URL sharing
+    generatePDF();
 }
 
 /**
