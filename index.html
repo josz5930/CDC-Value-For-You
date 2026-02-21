@@ -24,9 +24,91 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="voucher-denomination">Voucher Denomination ($)</label>
-                    <input type="number" id="voucher-denomination" min="0.01" step="0.01" value="10">
-                    <span class="error-message" id="voucher-denomination-error"></span>
+                    <label for="voucher-type">Voucher Type</label>
+                    <select id="voucher-type">
+                        <option value="cdc300">CDC Vouchers $300 (Non-May)</option>
+                        <option value="cdc500">CDC Vouchers $500 (May)</option>
+                        <option value="climate300">Climate Vouchers $300</option>
+                        <option value="sg60">SG60 Vouchers (Special/Anniversary)</option>
+                    </select>
+                    <span class="error-message" id="voucher-type-error"></span>
+                </div>
+
+                <div class="form-group" id="age-group" style="display: none;">
+                    <label for="age">Age (for SG60 Vouchers)</label>
+                    <input type="number" id="age" min="0" max="120" step="1" value="30">
+                    <span class="error-message" id="age-error"></span>
+                    <p class="help-text">SG60 vouchers have different splits for adults (21-59) and seniors (60+)</p>
+                </div>
+
+                <div class="denomination-breakdown card" id="denomination-breakdown" style="display: none;">
+                    <h3>Voucher Denomination Breakdown</h3>
+                    <div class="breakdown-section">
+                        <h4>Regular/Household Use (Heartland merchants & hawkers)</h4>
+                        <table class="denomination-table">
+                            <thead>
+                                <tr>
+                                    <th>Denomination</th>
+                                    <th>Quantity</th>
+                                    <th>Total Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="regular-denominations">
+                                <!-- Filled by JavaScript -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td id="regular-total-qty">0</td>
+                                    <td id="regular-total-value">$0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="breakdown-section">
+                        <h4>Supermarket Use (Supermarkets only)</h4>
+                        <table class="denomination-table">
+                            <thead>
+                                <tr>
+                                    <th>Denomination</th>
+                                    <th>Quantity</th>
+                                    <th>Total Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supermarket-denominations">
+                                <!-- Filled by JavaScript -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td id="supermarket-total-qty">0</td>
+                                    <td id="supermarket-total-value">$0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="breakdown-section">
+                        <h4>Climate Vendor Use (Climate vouchers only)</h4>
+                        <table class="denomination-table">
+                            <thead>
+                                <tr>
+                                    <th>Denomination</th>
+                                    <th>Quantity</th>
+                                    <th>Total Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="climate-denominations">
+                                <!-- Filled by JavaScript -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td id="climate-total-qty">0</td>
+                                    <td id="climate-total-value">$0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
 
                 <h2>Supermarket Spending</h2>

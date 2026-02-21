@@ -448,6 +448,84 @@ footer {
     outline-offset: 2px;
 }
 
+/* Denomination Breakdown Styles */
+.denomination-breakdown {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.denomination-breakdown h3 {
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+}
+
+.breakdown-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.breakdown-section h4 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.denomination-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.denomination-table th {
+    background-color: var(--background-color);
+    padding: var(--spacing-sm);
+    text-align: left;
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+.denomination-table td {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+}
+
+.denomination-table tfoot td {
+    font-weight: 600;
+    background-color: var(--background-color);
+}
+
+.no-denominations {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: var(--spacing-md) !important;
+}
+
+/* Select element styling */
+select {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1rem;
+    background-color: white;
+    transition: border-color 0.2s;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+select.error {
+    border-color: var(--error-color);
+}
+
+select.valid {
+    border-color: var(--success-color);
+}
+
 /* Print Styles */
 @media print {
     .button-group,

@@ -9,7 +9,8 @@ const CONFIG = {
     DEBOUNCE_DELAY: 300,
     DEFAULT_VALUES: {
         voucherAmount: 300,
-        voucherDenomination: 10,
+        voucherType: 'cdc300',
+        age: 30,
         supermarketSpend: 80,
         supermarketVisits: 4,
         heartlandSpend: 30,
@@ -18,13 +19,94 @@ const CONFIG = {
     },
     URL_PARAMS: [
         'amount',
-        'denomination',
+        'type',
+        'age',
         'super_spend',
         'super_visits',
         'heart_spend',
         'heart_visits',
         'wtp'
     ]
+};
+
+// Voucher Configuration Data
+const VOUCHER_CONFIG = {
+    cdc300: {
+        name: 'CDC Vouchers $300 (Non-May)',
+        total: 300,
+        regular: [
+            { denomination: 2, quantity: 15 },
+            { denomination: 5, quantity: 12 },
+            { denomination: 10, quantity: 6 }
+        ],
+        supermarket: [
+            { denomination: 10, quantity: 15 }
+        ],
+        climate: []
+    },
+    cdc500: {
+        name: 'CDC Vouchers $500 (May)',
+        total: 500,
+        regular: [
+            { denomination: 2, quantity: 25 },
+            { denomination: 5, quantity: 20 },
+            { denomination: 10, quantity: 10 }
+        ],
+        supermarket: [
+            { denomination: 10, quantity: 15 },
+            { denomination: 20, quantity: 5 }
+        ],
+        climate: []
+    },
+    climate300: {
+        name: 'Climate Vouchers $300',
+        total: 300,
+        regular: [],
+        supermarket: [],
+        climate: [
+            { denomination: 2, quantity: 5 },
+            { denomination: 5, quantity: 4 },
+            { denomination: 10, quantity: 12 },
+            { denomination: 50, quantity: 3 }
+        ]
+    },
+    sg60: {
+        name: 'SG60 Vouchers (Special/Anniversary)',
+        total: 0, // Will be calculated based on age
+        regular: [], // Will be populated based on age
+        supermarket: [], // Will be populated based on age
+        climate: []
+    }
+};
+
+// SG60 Age-based configurations
+const SG60_CONFIG = {
+    adult: {
+        name: 'SG60 Adult (21-59)',
+        total: 600,
+        regular: [
+            { denomination: 2, quantity: 15 },
+            { denomination: 5, quantity: 20 },
+            { denomination: 10, quantity: 17 }
+        ],
+        supermarket: [
+            { denomination: 10, quantity: 14 },
+            { denomination: 20, quantity: 8 }
+        ]
+    },
+    senior: {
+        name: 'SG60 Senior (60+)',
+        total: 800,
+        regular: [
+            { denomination: 2, quantity: 30 },
+            { denomination: 5, quantity: 14 },
+            { denomination: 10, quantity: 27 }
+        ],
+        supermarket: [
+            { denomination: 10, quantity: 20 },
+            { denomination: 20, quantity: 10 }
+        ]
+    }
 };
 
 // DOM Element References
@@ -52,7 +134,9 @@ function init() {
 function cacheElements() {
     // Input elements
     elements.voucherAmount = document.getElementById('voucher-amount');
-    elements.voucherDenomination = document.getElementById('voucher-denomination');
+    elements.voucherType = document.getElementById('voucher-type');
+    elements.age = document.getElementById('age');
+    elements.ageGroup = document.getElementById('age-group');
     elements.supermarketSpend = document.getElementById('supermarket-spend');
     elements.supermarketVisits = document.getElementById('supermarket-visits');
     elements.heartlandSpend = document.getElementById('heartland-spend');
@@ -61,7 +145,8 @@ function cacheElements() {
     
     // Error elements
     elements.voucherAmountError = document.getElementById('voucher-amount-error');
-    elements.voucherDenominationError = document.getElementById('voucher-denomination-error');
+    elements.voucherTypeError = document.getElementById('voucher-type-error');
+    elements.ageError = document.getElementById('age-error');
     elements.supermarketSpendError = document.getElementById('supermarket-spend-error');
     elements.supermarketVisitsError = document.getElementById('supermarket-visits-error');
     elements.heartlandSpendError = document.getElementById('heartland-spend-error');
@@ -86,6 +171,18 @@ function cacheElements() {
     elements.heartlandLoss = document.getElementById('heartland-loss');
     elements.totalLoss = document.getElementById('total-loss');
     elements.usableAmount = document.getElementById('usable-amount');
+    
+    // Denomination breakdown elements
+    elements.denominationBreakdown = document.getElementById('denomination-breakdown');
+    elements.regularDenominations = document.getElementById('regular-denominations');
+    elements.supermarketDenominations = document.getElementById('supermarket-denominations');
+    elements.climateDenominations = document.getElementById('climate-denominations');
+    elements.regularTotalQty = document.getElementById('regular-total-qty');
+    elements.regularTotalValue = document.getElementById('regular-total-value');
+    elements.supermarketTotalQty = document.getElementById('supermarket-total-qty');
+    elements.supermarketTotalValue = document.getElementById('supermarket-total-value');
+    elements.climateTotalQty = document.getElementById('climate-total-qty');
+    elements.climateTotalValue = document.getElementById('climate-total-value');
 }
 
 /**
@@ -95,7 +192,8 @@ function bindEvents() {
     // Input change events with debouncing
     const inputs = [
         elements.voucherAmount,
-        elements.voucherDenomination,
+        elements.voucherType,
+        elements.age,
         elements.supermarketSpend,
         elements.supermarketVisits,
         elements.heartlandSpend,
@@ -108,10 +206,16 @@ function bindEvents() {
         input.addEventListener('blur', handleInputBlur);
     });
     
+    // Special handling for voucher type change (to show/hide age field)
+    elements.voucherType.addEventListener('change', handleVoucherTypeChange);
+    
     // Button events
     elements.calculateBtn.addEventListener('click', calculateAndDisplay);
     elements.resetBtn.addEventListener('click', resetForm);
     elements.shareBtn.addEventListener('click', shareResults);
+    
+    // Initial update of voucher type UI
+    handleVoucherTypeChange();
 }
 
 /**
@@ -120,6 +224,11 @@ function bindEvents() {
 function handleInputChange(event) {
     const input = event.target;
     validateInput(input);
+    
+    // Update denomination breakdown if age or voucher type changes
+    if (input.id === 'age' || input.id === 'voucher-type') {
+        updateDenominationBreakdown();
+    }
     
     // Clear previous debounce timer
     if (calculationDebounceTimer) {
@@ -144,6 +253,135 @@ function handleInputBlur(event) {
 }
 
 /**
+ * Handle voucher type change (show/hide age field, update breakdown)
+ */
+function handleVoucherTypeChange() {
+    const voucherType = elements.voucherType.value;
+    
+    // Show/hide age field for SG60 vouchers
+    if (voucherType === 'sg60') {
+        elements.ageGroup.style.display = 'block';
+    } else {
+        elements.ageGroup.style.display = 'none';
+    }
+    
+    // Update denomination breakdown display
+    updateDenominationBreakdown();
+    
+    // Update voucher amount based on selected type
+    updateVoucherAmountFromType();
+}
+
+/**
+ * Update voucher amount input based on selected voucher type
+ */
+function updateVoucherAmountFromType() {
+    const voucherType = elements.voucherType.value;
+    const age = parseInt(elements.age.value) || 30;
+    
+    let totalAmount = 0;
+    
+    if (voucherType === 'cdc300') {
+        totalAmount = 300;
+    } else if (voucherType === 'cdc500') {
+        totalAmount = 500;
+    } else if (voucherType === 'climate300') {
+        totalAmount = 300;
+    } else if (voucherType === 'sg60') {
+        totalAmount = age >= 60 ? 800 : 600;
+    }
+    
+    // Update the voucher amount input
+    elements.voucherAmount.value = totalAmount;
+    
+    // Trigger validation and calculation
+    validateInput(elements.voucherAmount);
+    if (areAllInputsValid()) {
+        calculateAndDisplay();
+        saveToLocalStorage();
+    }
+}
+
+/**
+ * Update the denomination breakdown display
+ */
+function updateDenominationBreakdown() {
+    const voucherType = elements.voucherType.value;
+    const age = parseInt(elements.age.value) || 30;
+    
+    // Get the appropriate configuration
+    let config = null;
+    let sg60Type = null;
+    
+    if (voucherType === 'sg60') {
+        sg60Type = age >= 60 ? 'senior' : 'adult';
+        config = SG60_CONFIG[sg60Type];
+    } else {
+        config = VOUCHER_CONFIG[voucherType];
+    }
+    
+    if (!config) {
+        elements.denominationBreakdown.style.display = 'none';
+        return;
+    }
+    
+    // Show the breakdown section
+    elements.denominationBreakdown.style.display = 'block';
+    
+    // Helper function to populate a table
+    function populateTable(tableElement, denominations) {
+        tableElement.innerHTML = '';
+        
+        if (!denominations || denominations.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="3" class="no-denominations">No denominations for this category</td>';
+            tableElement.appendChild(row);
+            return { totalQty: 0, totalValue: 0 };
+        }
+        
+        let totalQty = 0;
+        let totalValue = 0;
+        
+        denominations.forEach(item => {
+            const row = document.createElement('tr');
+            const value = item.denomination * item.quantity;
+            row.innerHTML = `
+                <td>$${item.denomination}</td>
+                <td>${item.quantity}</td>
+                <td>$${value.toFixed(2)}</td>
+            `;
+            tableElement.appendChild(row);
+            
+            totalQty += item.quantity;
+            totalValue += value;
+        });
+        
+        return { totalQty, totalValue };
+    }
+    
+    // Populate each table
+    const regularResult = populateTable(elements.regularDenominations, config.regular);
+    const supermarketResult = populateTable(elements.supermarketDenominations, config.supermarket);
+    const climateResult = populateTable(elements.climateDenominations, config.climate);
+    
+    // Update totals
+    elements.regularTotalQty.textContent = regularResult.totalQty;
+    elements.regularTotalValue.textContent = `$${regularResult.totalValue.toFixed(2)}`;
+    elements.supermarketTotalQty.textContent = supermarketResult.totalQty;
+    elements.supermarketTotalValue.textContent = `$${supermarketResult.totalValue.toFixed(2)}`;
+    elements.climateTotalQty.textContent = climateResult.totalQty;
+    elements.climateTotalValue.textContent = `$${climateResult.totalValue.toFixed(2)}`;
+    
+    // Hide climate section if no climate denominations
+    const climateSection = elements.denominationBreakdown.querySelector('.breakdown-section:nth-child(3)');
+    if (climateResult.totalQty === 0) {
+        climateSection.style.display = 'none';
+    } else {
+        climateSection.style.display = 'block';
+    }
+}
+
+/**
  * Validate a single input field
  * @param {HTMLInputElement} input - The input element to validate
  * @returns {boolean} - Whether the input is valid
@@ -153,6 +391,13 @@ function validateInput(input) {
     const fieldName = input.id;
     let isValid = true;
     let errorMessage = '';
+    
+    // Special handling for select elements (voucher-type)
+    if (fieldName === 'voucher-type') {
+        // Select elements always have a value, no validation needed
+        updateInputValidationUI(input, true, '');
+        return true;
+    }
     
     // Check if value is a valid number
     if (value === '' || isNaN(value)) {
@@ -173,10 +418,13 @@ function validateInput(input) {
                 }
                 break;
                 
-            case 'voucher-denomination':
-                if (numValue <= 0) {
+            case 'age':
+                if (numValue < 0 || numValue > 120) {
                     isValid = false;
-                    errorMessage = 'Must be greater than 0';
+                    errorMessage = 'Must be between 0 and 120';
+                } else if (!Number.isInteger(numValue)) {
+                    isValid = false;
+                    errorMessage = 'Must be a whole number';
                 }
                 break;
                 
@@ -242,7 +490,8 @@ function updateInputValidationUI(input, isValid, errorMessage) {
 function validateAllInputs() {
     const inputs = [
         elements.voucherAmount,
-        elements.voucherDenomination,
+        elements.voucherType,
+        elements.age,
         elements.supermarketSpend,
         elements.supermarketVisits,
         elements.heartlandSpend,
@@ -266,7 +515,8 @@ function validateAllInputs() {
 function areAllInputsValid() {
     const inputs = [
         elements.voucherAmount,
-        elements.voucherDenomination,
+        elements.voucherType,
+        elements.age,
         elements.supermarketSpend,
         elements.supermarketVisits,
         elements.heartlandSpend,
@@ -344,7 +594,8 @@ function calculateAndDisplay() {
     
     // Get input values
     const voucherAmount = getInputValue(elements.voucherAmount);
-    const denomination = getInputValue(elements.voucherDenomination);
+    const voucherType = elements.voucherType.value;
+    const age = getInputValue(elements.age);
     const supermarketSpend = getInputValue(elements.supermarketSpend);
     const supermarketVisits = getInputValue(elements.supermarketVisits);
     const heartlandSpend = getInputValue(elements.heartlandSpend);
@@ -353,9 +604,10 @@ function calculateAndDisplay() {
     
     // Calculate all three methods
     const wtpValue = calculateWTP(voucherAmount, wtpPercentage);
-    const denomResult = calculateDenominationLoss(
+    const denomResult = calculateDenominationLossMulti(
         voucherAmount,
-        denomination,
+        voucherType,
+        age,
         supermarketSpend,
         supermarketVisits,
         heartlandSpend,
@@ -390,7 +642,10 @@ function calculateAndDisplay() {
         supermarketLoss: denomResult.supermarketLoss,
         heartlandLoss: denomResult.heartlandLoss,
         totalLoss: denomResult.totalLoss,
-        usableAmount: denomResult.usableAmount
+        usableAmount: denomResult.usableAmount,
+        voucherType: voucherType,
+        age: age,
+        voucherConfig: denomResult.config
     });
 }
 
@@ -402,7 +657,7 @@ function calculateWTP(voucherAmount, wtpPercentage) {
 }
 
 /**
- * Helper: Calculate loss for a single transaction
+ * Helper: Calculate loss for a single transaction with single denomination
  */
 function getLoss(spendAmount, denomination) {
     if (spendAmount <= 0 || denomination <= 0) {
@@ -419,7 +674,188 @@ function getLoss(spendAmount, denomination) {
 }
 
 /**
- * Method 2: Calculate Denomination Loss
+ * Helper: Calculate loss for a single transaction with multiple denominations
+ * Uses realistic voucher usage: one voucher per iteration, smallest that covers
+ * @param {number} spendAmount - Amount spent
+ * @param {Array} denominations - Array of denomination objects [{denomination: x, quantity: y}]
+ * @returns {Object} - {loss: number, usedDenominations: Array}
+ */
+function getLossMultiDenomination(spendAmount, denominations) {
+    if (spendAmount <= 0 || !denominations || denominations.length === 0) {
+        return { loss: 0, usedDenominations: [] };
+    }
+    
+    // Sort denominations from smallest to largest
+    const sortedDenoms = [...denominations].sort((a, b) => a.denomination - b.denomination);
+    
+    let remainingSpend = spendAmount;
+    let totalLoss = 0;
+    const usedDenominations = [];
+    
+    // Use vouchers one at a time until spend is covered
+    while (remainingSpend > 0) {
+        // Find the smallest denomination that can cover the remaining spend
+        let selectedDenom = null;
+        
+        for (const denom of sortedDenoms) {
+            if (denom.quantity > 0 && denom.denomination >= remainingSpend) {
+                selectedDenom = denom;
+                break;
+            }
+        }
+        
+        // If no single voucher covers it, use the largest available
+        if (!selectedDenom) {
+            for (let i = sortedDenoms.length - 1; i >= 0; i--) {
+                if (sortedDenoms[i].quantity > 0) {
+                    selectedDenom = sortedDenoms[i];
+                    break;
+                }
+            }
+        }
+        
+        // If no vouchers available, we can't cover the remaining spend
+        if (!selectedDenom || selectedDenom.quantity <= 0) {
+            break;
+        }
+        
+        // Use one voucher
+        const voucherValue = selectedDenom.denomination;
+        const loss = Math.max(0, voucherValue - remainingSpend);
+        
+        // Track usage
+        const existing = usedDenominations.find(d => d.denomination === selectedDenom.denomination);
+        if (existing) {
+            existing.quantity += 1;
+            existing.value += voucherValue;
+            existing.loss += loss;
+        } else {
+            usedDenominations.push({
+                denomination: selectedDenom.denomination,
+                quantity: 1,
+                value: voucherValue,
+                loss: loss
+            });
+        }
+        
+        totalLoss += loss;
+        remainingSpend = Math.max(0, remainingSpend - voucherValue);
+        selectedDenom.quantity--;
+    }
+    
+    return { loss: totalLoss, usedDenominations };
+}
+
+/**
+ * Helper: Get voucher configuration based on type and age
+ */
+function getVoucherConfig(voucherType, age) {
+    if (voucherType === 'sg60') {
+        const sg60Type = age >= 60 ? 'senior' : 'adult';
+        return SG60_CONFIG[sg60Type];
+    } else {
+        return VOUCHER_CONFIG[voucherType];
+    }
+}
+
+/**
+ * Method 2: Calculate Denomination Loss (Multi-denomination version)
+ */
+function calculateDenominationLossMulti(
+    voucherAmount,
+    voucherType,
+    age,
+    supermarketSpend,
+    supermarketVisits,
+    heartlandSpend,
+    heartlandVisits
+) {
+    // Get voucher configuration
+    const config = getVoucherConfig(voucherType, age);
+    if (!config) {
+        // Fallback to old single denomination calculation
+        const defaultDenomination = 10;
+        return calculateDenominationLoss(
+            voucherAmount,
+            defaultDenomination,
+            supermarketSpend,
+            supermarketVisits,
+            heartlandSpend,
+            heartlandVisits
+        );
+    }
+    
+    // Calculate loss for supermarket transactions
+    let supermarketTotalLoss = 0;
+    let supermarketUsedDenominations = [];
+    
+    if (supermarketVisits > 0 && config.supermarket && config.supermarket.length > 0) {
+        // Create a copy of supermarket denominations for simulation
+        const supermarketDenoms = config.supermarket.map(d => ({ ...d }));
+        
+        for (let i = 0; i < supermarketVisits; i++) {
+            const result = getLossMultiDenomination(supermarketSpend, supermarketDenoms);
+            supermarketTotalLoss += result.loss;
+            
+            // Update remaining quantities
+            result.usedDenominations.forEach(used => {
+                const denom = supermarketDenoms.find(d => d.denomination === used.denomination);
+                if (denom) {
+                    denom.quantity -= used.quantity;
+                    if (denom.quantity < 0) denom.quantity = 0;
+                }
+            });
+        }
+    }
+    
+    // Calculate loss for heartland transactions
+    let heartlandTotalLoss = 0;
+    let heartlandUsedDenominations = [];
+    
+    if (heartlandVisits > 0 && config.regular && config.regular.length > 0) {
+        // Create a copy of regular denominations for simulation
+        const heartlandDenoms = config.regular.map(d => ({ ...d }));
+        
+        for (let i = 0; i < heartlandVisits; i++) {
+            const result = getLossMultiDenomination(heartlandSpend, heartlandDenoms);
+            heartlandTotalLoss += result.loss;
+            
+            // Update remaining quantities
+            result.usedDenominations.forEach(used => {
+                const denom = heartlandDenoms.find(d => d.denomination === used.denomination);
+                if (denom) {
+                    denom.quantity -= used.quantity;
+                    if (denom.quantity < 0) denom.quantity = 0;
+                }
+            });
+        }
+    }
+    
+    // Calculate total projected spend
+    const totalProjectedSpend = (supermarketSpend * supermarketVisits) +
+                                (heartlandSpend * heartlandVisits);
+    
+    // Calculate usable amount (can't use more than voucher amount or projected spend)
+    const usableAmount = Math.min(voucherAmount, totalProjectedSpend);
+    
+    // Total loss can't exceed usable amount
+    const totalLoss = Math.min(supermarketTotalLoss + heartlandTotalLoss, usableAmount);
+    
+    // Final value
+    const value = usableAmount - totalLoss;
+    
+    return {
+        value,
+        supermarketLoss: supermarketTotalLoss,
+        heartlandLoss: heartlandTotalLoss,
+        totalLoss,
+        usableAmount,
+        config: config
+    };
+}
+
+/**
+ * Method 2: Calculate Denomination Loss (Legacy single denomination version)
  */
 function calculateDenominationLoss(
     voucherAmount,
@@ -437,7 +873,7 @@ function calculateDenominationLoss(
     const heartlandTotalLoss = heartlandLossPerVisit * heartlandVisits;
     
     // Calculate total projected spend
-    const totalProjectedSpend = (supermarketSpend * supermarketVisits) + 
+    const totalProjectedSpend = (supermarketSpend * supermarketVisits) +
                                 (heartlandSpend * heartlandVisits);
     
     // Calculate usable amount (can't use more than voucher amount or projected spend)
@@ -527,7 +963,8 @@ function displayResults(results) {
 function resetForm() {
     // Reset inputs to defaults
     elements.voucherAmount.value = CONFIG.DEFAULT_VALUES.voucherAmount;
-    elements.voucherDenomination.value = CONFIG.DEFAULT_VALUES.voucherDenomination;
+    elements.voucherType.value = CONFIG.DEFAULT_VALUES.voucherType;
+    elements.age.value = CONFIG.DEFAULT_VALUES.age;
     elements.supermarketSpend.value = CONFIG.DEFAULT_VALUES.supermarketSpend;
     elements.supermarketVisits.value = CONFIG.DEFAULT_VALUES.supermarketVisits;
     elements.heartlandSpend.value = CONFIG.DEFAULT_VALUES.heartlandSpend;
@@ -537,7 +974,8 @@ function resetForm() {
     // Clear validation states
     const inputs = [
         elements.voucherAmount,
-        elements.voucherDenomination,
+        elements.voucherType,
+        elements.age,
         elements.supermarketSpend,
         elements.supermarketVisits,
         elements.heartlandSpend,
@@ -561,8 +999,12 @@ function resetForm() {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     
-    // Hide results
+    // Hide results and denomination breakdown
     elements.resultsSection.style.display = 'none';
+    elements.denominationBreakdown.style.display = 'none';
+    
+    // Update UI based on reset values
+    handleVoucherTypeChange();
     
     // Validate and calculate
     validateAllInputs();
@@ -613,9 +1055,16 @@ function generatePDF() {
         };
         
         // Input values
+        const voucherTypeLabel = currentResults.voucherType ?
+            (currentResults.voucherType === 'cdc300' ? 'CDC $300 (Non-May)' :
+             currentResults.voucherType === 'cdc500' ? 'CDC $500 (May)' :
+             currentResults.voucherType === 'climate300' ? 'Climate $300' :
+             currentResults.voucherType === 'sg60' ? 'SG60 Vouchers' : 'Custom') : 'Custom';
+        
         const inputs = [
             ['Total Voucher Amount:', formatCurrency(currentResults.voucherAmount)],
-            ['Voucher Denomination:', formatCurrency(getInputValue(elements.voucherDenomination))],
+            ['Voucher Type:', voucherTypeLabel],
+            ['Age:', currentResults.age ? currentResults.age + ' years' : 'N/A'],
             ['Supermarket Avg. Spend:', formatCurrency(getInputValue(elements.supermarketSpend))],
             ['Supermarket Visits:', getInputValue(elements.supermarketVisits)],
             ['Heartland Avg. Spend:', formatCurrency(getInputValue(elements.heartlandSpend))],
@@ -787,7 +1236,8 @@ function saveToLocalStorage() {
     try {
         const data = {
             voucherAmount: elements.voucherAmount.value,
-            voucherDenomination: elements.voucherDenomination.value,
+            voucherType: elements.voucherType.value,
+            age: elements.age.value,
             supermarketSpend: elements.supermarketSpend.value,
             supermarketVisits: elements.supermarketVisits.value,
             heartlandSpend: elements.heartlandSpend.value,
@@ -825,8 +1275,12 @@ function loadFromLocalStorage() {
         if (isValidNumber(data.voucherAmount)) {
             elements.voucherAmount.value = sanitizeInput(data.voucherAmount);
         }
-        if (isValidNumber(data.voucherDenomination)) {
-            elements.voucherDenomination.value = sanitizeInput(data.voucherDenomination);
+        // Handle voucher type (string, not a number)
+        if (data.voucherType && ['cdc300', 'cdc500', 'climate300', 'sg60'].includes(data.voucherType)) {
+            elements.voucherType.value = data.voucherType;
+        }
+        if (isValidNumber(data.age)) {
+            elements.age.value = sanitizeInput(data.age);
         }
         if (isValidNumber(data.supermarketSpend)) {
             elements.supermarketSpend.value = sanitizeInput(data.supermarketSpend);
@@ -843,6 +1297,9 @@ function loadFromLocalStorage() {
         if (isValidNumber(data.wtpPercentage)) {
             elements.wtpPercentage.value = sanitizeInput(data.wtpPercentage);
         }
+        
+        // Update UI based on loaded values
+        handleVoucherTypeChange();
     } catch (e) {
         console.warn('Failed to load from localStorage:', e);
         // Clear corrupted data
@@ -887,13 +1344,24 @@ function loadFromUrlParams() {
             }
         };
         
+        // Handle voucher type (special case - string, not number)
+        if (params.has('type')) {
+            const typeValue = params.get('type');
+            if (['cdc300', 'cdc500', 'climate300', 'sg60'].includes(typeValue)) {
+                elements.voucherType.value = typeValue;
+            }
+        }
+        
         setParamValue('amount', elements.voucherAmount, (v) => v > 0 && v <= 2000);
-        setParamValue('denomination', elements.voucherDenomination, (v) => v > 0);
+        setParamValue('age', elements.age, (v) => v >= 0 && v <= 120 && Number.isInteger(v));
         setParamValue('super_spend', elements.supermarketSpend, (v) => v >= 0);
         setParamValue('super_visits', elements.supermarketVisits, (v) => v >= 0 && Number.isInteger(v));
         setParamValue('heart_spend', elements.heartlandSpend, (v) => v >= 0);
         setParamValue('heart_visits', elements.heartlandVisits, (v) => v >= 0 && Number.isInteger(v));
         setParamValue('wtp', elements.wtpPercentage, (v) => v >= 0 && v <= 100);
+        
+        // Update UI based on loaded values
+        handleVoucherTypeChange();
         
     } catch (e) {
         console.warn('Failed to load URL params:', e);
