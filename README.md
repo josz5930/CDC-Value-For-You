@@ -373,7 +373,19 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 ---
 
 ## 📞 Support
+### **Disclaimer of Warranty & Liability**
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+This project was created also completely using AI output. **This inherently increases the likelihood of the following:**
+*   Logical errors and functional bugs.
+*   Incorrect or insecure code patterns.
+*   Unintended behavior and instability.
+*   Security vulnerabilities.
+
+You assume **all risks and responsibilities** associated with the use, inspection, and modification of this code. It is strongly advised to conduct thorough security reviews and testing before any deployment.
+
+### Issues and support
+There is no support provided for the use of the tool.
 
 ---
 
