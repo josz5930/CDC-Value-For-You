@@ -182,3 +182,83 @@ If the application reads URL parameters to pre-fill the form (e.g., `?amount=300
 *   **Method 2 (Denomination Loss)** calculates the mechanical loss of value due to the "No Change" policy.
 *   **Method 3 (Incremental/Opp Cost)** calculates the replacement value (financial utility).
 *   **Final Output**: The code should present a summary sentence such as: *"Your $300 vouchers are worth between **$150** and **$210** to you based on your usage profile."*
+
+---
+
+## 8. Feature Requests (Completed)
+
+### 8.1 Feature 1: Multiple Voucher Types with Denomination Breakdowns
+
+**Status**: ✅ Implemented
+
+**Description**: Extended the calculator to support multiple Singapore government voucher schemes with detailed denomination breakdowns for each voucher type.
+
+**Supported Voucher Types**:
+- **CDC Vouchers $300 (Non-May)**: Regular distribution with $2, $5, $10 denominations
+- **CDC Vouchers $500 (May)**: Enhanced May distribution with additional $20 denominations
+- **Climate Vouchers $300**: Specialized vouchers for climate-friendly purchases ($2, $5, $10, $50 denominations)
+- **SG60 Vouchers**: Anniversary special vouchers with age-based calculations
+  - Adult (21-59): $600 total
+  - Senior (60+): $800 total
+
+**Implementation Details**:
+- Added `VOUCHER_CONFIG` object with detailed denomination mappings
+- Created dynamic denomination breakdown tables in UI
+- Implemented separate tracking for:
+  - Regular/Household use (Heartland merchants & hawkers)
+  - Supermarket use (Supermarkets only)
+  - Climate vendor use (Climate vouchers only)
+- Added age input field for SG60 voucher calculations
+- Real-time denomination display updates based on voucher type selection
+
+**Technical Changes**:
+- Extended input variables to include `voucherType` and `age`
+- Added denomination-aware loss calculation in `getLossMultiDenomination()`
+- Implemented dynamic table generation for denomination breakdowns
+- Added URL parameter support for voucher type and age
+
+### 8.2 Feature 2: Export Results as PDF
+
+**Status**: 🔄 Pending Implementation
+
+**Description**: Add functionality to export calculation results as a PDF document for users to save or share their voucher valuation analysis.
+
+**Requirements**:
+- Export button in the results section
+- PDF generation using client-side libraries (e.g., jsPDF, html2pdf.js)
+- Include in PDF export:
+  - User input values (voucher amount, spending patterns, WTP percentage)
+  - Complete denomination breakdown
+  - All three calculation method results
+  - Value range summary
+  - Efficiency score
+  - Timestamp of calculation
+  - Visual charts/graphs (if implemented)
+
+**Technical Specifications**:
+- Use `html2pdf.js` or `jsPDF` library (CDN or bundled)
+- Maintain client-side only architecture
+- PDF styling should match application theme
+- Include page headers and footers
+- Support for both desktop and mobile generated PDFs
+
+**Security Considerations**:
+- Ensure PDF generation libraries are loaded from trusted CDN with SRI hashes
+- No sensitive user data should be transmitted to external PDF generation services
+- All processing must remain client-side
+
+**UI/UX Requirements**:
+- "Export as PDF" button in results dashboard
+- Loading indicator during PDF generation
+- Error handling for PDF generation failures
+- Filename format: `CDC-Voucher-Analysis-YYYY-MM-DD.pdf`
+
+---
+
+## 9. Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | Initial | Basic calculator with 3 valuation methods |
+| 1.1.0 | 2026-02 | Added multiple voucher types with denomination breakdowns |
+| 1.2.0 | TBD | Added PDF export functionality |
