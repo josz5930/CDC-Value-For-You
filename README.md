@@ -142,13 +142,13 @@ The calculator presents a **value range** showing:
 ## 🚀 Installation
 
 ### Option 1: Direct Download (Expected Workflow)
-1. Download the latest release from the [Releases](https://github.com/josz5930/cdc-voucher-calculator/releases) page
+1. Download the latest release from the [Releases](https://github.com/josz5930/CDC-Value-For-You/releases) page
 2. Extract the ZIP file
 3. Open `index.html` in your web browser
 
 ### Option 2: Clone Repository (For Development)
 ```bash
-git clone https://github.com/yourusername/cdc-voucher-calculator.git
+git clone https://github.com/josz5930/CDC-Value-For-You.git
 cd cdc-voucher-calculator
 # Open index.html in your browser
 ```
@@ -299,11 +299,10 @@ cdc-voucher-calculator/
 ---
 
 ## 🤝 Contributing
-
-We welcome contributions! Please follow these guidelines:
+If you really feel the need to update this AI generated work, you may use the following:
 
 ### Reporting Issues
-- Use the [GitHub Issues](https://github.com/yourusername/cdc-voucher-calculator/issues) page
+- Use the [GitHub Issues](https://github.com/josz5930/CDC-Value-For-You/issues) page
 - Include browser version and operating system
 - Provide steps to reproduce
 - Include screenshots if applicable
@@ -320,7 +319,7 @@ We welcome contributions! Please follow these guidelines:
 ### Development Guidelines
 - Maintain client-side only architecture
 - Follow existing code style
-- Ensure XSS protection for any new inputs
+- Ensure strong input validation to prevent XSS
 - Test on multiple browsers
 - Update documentation as needed
 
